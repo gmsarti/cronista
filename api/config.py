@@ -3,7 +3,7 @@ config.py — configuração da API.
 
 Os tetos (`max_*`) existem porque a API é stateless: cada requisição re-simula
 o mundo do zero, então o custo de uma request é proporcional a
-`years * n_civs * figuras_por_civ`. Sem teto, uma única chamada poderia pedir
+`years * n_civs * figures_per_civ`. Sem teto, uma única chamada poderia pedir
 100.000 anos e travar o processo.
 """
 from functools import lru_cache
@@ -19,11 +19,11 @@ class Settings(BaseSettings):
 
     default_years: int = 180
     default_n_civs: int = 5
-    default_figuras_por_civ: int = 6
+    default_figures_per_civ: int = 6
 
     max_years: int = 1000
     max_n_civs: int = 20
-    max_figuras_por_civ: int = 30
+    max_figures_per_civ: int = 30
 
 
 @lru_cache

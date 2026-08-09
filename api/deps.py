@@ -2,7 +2,7 @@
 deps.py — os parâmetros de simulação e a construção do mundo.
 
 A API é stateless: não existe mundo guardado no servidor. Cada requisição
-re-simula a partir de `(seed, years, n_civs, figuras_por_civ)` — o que é sempre
+re-simula a partir de `(seed, years, n_civs, figures_per_civ)` — o que é sempre
 consistente, porque `simulate` é determinístico.
 """
 from typing import Annotated
@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from api.config import get_settings
 from cronista import World, simulate
 
-_s = get_settings()
+_settings = get_settings()
 
 
 class SimulationParams(BaseModel):
@@ -23,10 +23,10 @@ class SimulationParams(BaseModel):
     extras rejeitaria os filtros próprios de cada rota (`kind`, `limit`, ...).
     """
 
-    years: int = Field(default=_s.default_years, ge=1, le=_s.max_years)
-    n_civs: int = Field(default=_s.default_n_civs, ge=1, le=_s.max_n_civs)
-    figuras_por_civ: int = Field(
-        default=_s.default_figuras_por_civ, ge=1, le=_s.max_figuras_por_civ
+    years: int = Field(default=_settings.default_years, ge=1, le=_settings.max_years)
+    n_civs: int = Field(default=_settings.default_n_civs, ge=1, le=_settings.max_n_civs)
+    figures_per_civ: int = Field(
+        default=_settings.default_figures_per_civ, ge=1, le=_settings.max_figures_per_civ
     )
 
 
@@ -38,7 +38,7 @@ def get_world(
         seed=seed,
         years=params.years,
         n_civs=params.n_civs,
-        figuras_por_civ=params.figuras_por_civ,
+        figures_per_civ=params.figures_per_civ,
     )
 
 

@@ -18,7 +18,7 @@ class SimulationParamsOut(BaseModel):
     seed: int
     years: int
     n_civs: int
-    figuras_por_civ: int
+    figures_per_civ: int
 
 
 class EventOut(BaseModel):
@@ -36,7 +36,7 @@ class EventOut(BaseModel):
 class NarratedEventOut(EventOut):
     """Um evento acompanhado da prosa que o narra."""
 
-    prosa: str
+    narration: str
 
 
 class EventPageOut(BaseModel):
@@ -48,21 +48,21 @@ class EventPageOut(BaseModel):
 
 class WorldSummaryOut(BaseModel):
     params: SimulationParamsOut
-    total_eventos: int
-    figuras_vivas: int
-    figuras_total: int
+    total_events: int
+    living_figures: int
+    total_figures: int
     artefatos: int
-    resumo: str
-    estado_geopolitico: str
+    summary: str
+    geopolitical_state: str
 
 
 class SagaOut(BaseModel):
     """Um evento e toda a cadeia causal que o produziu."""
 
     event_id: int
-    profundidade: int
-    prosa: str
-    cadeia: list[NarratedEventOut]
+    depth: int
+    narration: str
+    chain: list[NarratedEventOut]
 
 
 class SagaRefOut(BaseModel):
@@ -71,8 +71,8 @@ class SagaRefOut(BaseModel):
     event_id: int
     year: int
     kind: str
-    profundidade: int
-    prosa: str
+    depth: int
+    narration: str
 
 
 class WorldLogOut(BaseModel):

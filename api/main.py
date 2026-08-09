@@ -20,7 +20,7 @@ def create_app() -> FastAPI:
         description=(
             "Gerador determinístico de história event-sourced. "
             "A API é stateless: cada requisição re-simula o mundo a partir de "
-            "(seed, years, n_civs, figuras_por_civ)."
+            "(seed, years, n_civs, figures_per_civ)."
         ),
     )
     app.include_router(health.router)

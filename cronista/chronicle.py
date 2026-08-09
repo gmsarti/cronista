@@ -25,124 +25,143 @@ def index_log(world: World) -> dict[int, Event]:
 def causal_subtree(world: World, event_id: int) -> list[Event]:
     """Todos os ancestrais causais de um evento, em ordem cronológica."""
     idx = index_log(world)
-    visto: set[int] = set()
-    ordem: list[Event] = []
+    visited: set[int] = set()
+    ordered: list[Event] = []
 
     def visit(eid: int) -> None:
-        if eid in visto or eid not in idx:
+        if eid in visited or eid not in idx:
             return
-        visto.add(eid)
+        visited.add(eid)
         ev = idx[eid]
-        for pai in ev.caused_by:
-            visit(pai)
-        ordem.append(ev)
+        for parent_id in ev.caused_by:
+            visit(parent_id)
+        ordered.append(ev)
 
     visit(event_id)
-    ordem.sort(key=lambda e: (e.year, e.id))
-    return ordem
+    ordered.sort(key=lambda e: (e.year, e.id))
+    return ordered
 
 
 # ---- renderização de um evento isolado ---------------------------------
 def render_event(world: World, ev: Event) -> str:
-    n = world.name_of
-    y = f"Ano {ev.year:>3}"
-    d = ev.data
+    name_of = world.name_of
+    year_label = f"Ano {ev.year:>3}"
+    event_data = ev.data
+
+    actor_a = name_of(ev.actors[0]) if ev.actors else None
+    actor_b = name_of(ev.actors[1]) if len(ev.actors) > 1 else None
 
     if ev.kind == "nascimento":
-        return f"{y}: nasce {d.get('name', n(ev.actors[0]))}, de {n(ev.actors[1])} e {n(ev.actors[2])}."
+        child_name = event_data.get("name", actor_a)
+        parent_c = name_of(ev.actors[2])
+        return f"{year_label}: nasce {child_name}, de {actor_b} e {parent_c}."
 
     if ev.kind == "casamento":
-        afin = descrever_intensidade(d.get("afinidade", 5))
-        return f"{y}: {n(ev.actors[0])} e {n(ev.actors[1])} se unem — uma afinidade {afin}."
+        affinity_label = descrever_intensidade(event_data.get("afinidade", 5))
+        return f"{year_label}: {actor_a} e {actor_b} se unem — uma afinidade {affinity_label}."
 
     if ev.kind == "morte":
-        causa = d.get("causa", "?")
-        renome = descrever_renome(d.get("renome", 1))
-        quem = f"{n(ev.actors[0])}, {renome}," if renome != "desconhecido" else n(ev.actors[0])
+        causa = event_data.get("causa", "?")
+        renome = descrever_renome(event_data.get("renome", 1))
+        quem = f"{actor_a}, {renome}," if renome != "desconhecido" else actor_a
+        contra = name_of(event_data.get("contra"))
         if causa == "batalha":
-            if d.get("traicao"):
-                return f"{y}: tomba {quem} pela mão dos próprios sogros de {n(d.get('contra'))} — o sangue foi traído."
-            return f"{y}: tomba em batalha {quem} sob os golpes de {n(d.get('contra'))}."
-        return f"{y}: morre {quem} aos {d.get('idade', '?')} anos."
+            if event_data.get("traicao"):
+                return (f"{year_label}: tomba {quem} pela mão dos próprios sogros de {contra}"
+                        " — o sangue foi traído.")
+            return f"{year_label}: tomba em batalha {quem} sob os golpes de {contra}."
+        return f"{year_label}: morre {quem} aos {event_data.get('idade', '?')} anos."
 
     if ev.kind == "casamento_dinastico":
-        noivos = d.get("noivos", [n(ev.actors[0]), n(ev.actors[1])])
-        c1, c2 = d.get("civs", ev.actors)
-        return f"{y}: casamento dinástico une {noivos[0]} ({n(c1)}) e {noivos[1]} ({n(c2)}) — o sangue sela o comércio."
+        noivos = event_data.get("noivos", [actor_a, actor_b])
+        civ_a_id, civ_b_id = event_data.get("civs", ev.actors)
+        civ_a, civ_b = name_of(civ_a_id), name_of(civ_b_id)
+        return (f"{year_label}: casamento dinástico une {noivos[0]} ({civ_a}) e "
+                f"{noivos[1]} ({civ_b}) — o sangue sela o comércio.")
 
     if ev.kind == "artefato_forjado":
-        fama = descrever_intensidade(d.get("fama", 5))
-        return f"{y}: {n(ev.actors[0])} forja {d.get('name')}, artefato de fama {fama}."
+        fame_label = descrever_intensidade(event_data.get("fama", 5))
+        return (f"{year_label}: {actor_a} forja {event_data.get('name')}, "
+                f"artefato de fama {fame_label}.")
 
     if ev.kind == "artefato_roubado":
-        return f"{y}: {n(ev.actors[0])} rouba {d.get('name')} das mãos de {n(ev.actors[1])} — uma afronta."
+        return (f"{year_label}: {actor_a} rouba {event_data.get('name')} das mãos de {actor_b}"
+                " — uma afronta.")
 
     if ev.kind == "rota_comercial":
-        vol = descrever_intensidade(d.get("volume", 5))
-        return f"{y}: abre-se uma rota comercial entre {n(ev.actors[0])} e {n(ev.actors[1])} — trocas de intensidade {vol}."
+        volume_label = descrever_intensidade(event_data.get("volume", 5))
+        return (f"{year_label}: abre-se uma rota comercial entre {actor_a} e {actor_b}"
+                f" — trocas de intensidade {volume_label}.")
 
     if ev.kind == "comercio_rompido":
-        return f"{y}: as rotas entre {n(ev.actors[0])} e {n(ev.actors[1])} se fecham — a guerra estrangula o comércio."
+        return (f"{year_label}: as rotas entre {actor_a} e {actor_b} se fecham"
+                " — a guerra estrangula o comércio.")
 
     if ev.kind == "alianca_formada":
-        com = descrever_intensidade(d.get("comercio", 8))
-        return f"{y}: {n(ev.actors[0])} e {n(ev.actors[1])} selam aliança, cimentada por um comércio {com}."
+        trade_label = descrever_intensidade(event_data.get("comercio", 8))
+        return (f"{year_label}: {actor_a} e {actor_b} selam aliança, "
+                f"cimentada por um comércio {trade_label}.")
 
     if ev.kind == "alianca_rompida":
-        return f"{y}: desfaz-se a aliança entre {n(ev.actors[0])} e {n(ev.actors[1])} — o comércio minguou."
+        return (f"{year_label}: desfaz-se a aliança entre {actor_a} e {actor_b}"
+                " — o comércio minguou.")
 
     if ev.kind == "guerra_declarada":
-        t = descrever_intensidade(d.get("tensao", 8))
-        if d.get("motivo") == "traição":
-            traidor = d.get("traidor_nome")
-            quem = f"{traidor}, de {n(ev.actors[0])}," if traidor else n(ev.actors[0])
-            return f"{y}: {quem} trai o sangue e marcha contra {n(ev.actors[1])} — a aliança é rasgada."
-        if d.get("motivo") == "aliança":
-            return f"{y}: {n(ev.actors[0])} entra na guerra contra {n(ev.actors[1])} para honrar uma aliança."
-        return f"{y}: {n(ev.actors[0])} declara guerra a {n(ev.actors[1])} — a tensão era {t}."
+        tension_label = descrever_intensidade(event_data.get("tensao", 8))
+        if event_data.get("motivo") == "traição":
+            traidor = event_data.get("traidor_nome")
+            quem = f"{traidor}, de {actor_a}," if traidor else actor_a
+            return (f"{year_label}: {quem} trai o sangue e marcha contra {actor_b}"
+                    " — a aliança é rasgada.")
+        if event_data.get("motivo") == "aliança":
+            return (f"{year_label}: {actor_a} entra na guerra contra {actor_b} "
+                    "para honrar uma aliança.")
+        return f"{year_label}: {actor_a} declara guerra a {actor_b} — a tensão era {tension_label}."
 
     if ev.kind == "batalha":
-        venc = n(d.get("vencedor"))
-        perd = n(ev.actors[0] if ev.actors[1] == d.get("vencedor") else ev.actors[1])
-        n_mortos = len(d.get("mortos", []))
-        decisiva = "esmagadora" if d.get("margem", 0) > 0.5 else "renhida"
-        cauda = f" ({n_mortos} figuras notáveis caem)" if n_mortos else ""
-        return f"{y}: batalha {decisiva} — {venc} prevalece sobre {perd}{cauda}."
+        winner_name = name_of(event_data.get("vencedor"))
+        loser_id = ev.actors[0] if ev.actors[1] == event_data.get("vencedor") else ev.actors[1]
+        loser_name = name_of(loser_id)
+        dead_count = len(event_data.get("mortos", []))
+        decisiva = "esmagadora" if event_data.get("margem", 0) > 0.5 else "renhida"
+        cauda = f" ({dead_count} figuras notáveis caem)" if dead_count else ""
+        return (f"{year_label}: batalha {decisiva} — {winner_name} prevalece sobre {loser_name}"
+                f"{cauda}.")
 
     if ev.kind == "paz":
-        return f"{y}: {n(ev.actors[0])} e {n(ev.actors[1])} firmam a paz, exaustos."
+        return f"{year_label}: {actor_a} e {actor_b} firmam a paz, exaustos."
 
-    return f"{y}: {ev.kind} {list(ev.actors)}"
+    return f"{year_label}: {ev.kind} {list(ev.actors)}"
 
 
 # ---- a saga: um evento e toda a sua cadeia causal ----------------------
 def render_saga(world: World, event_id: int) -> str:
-    cadeia = causal_subtree(world, event_id)
-    linhas = [render_event(world, e) for e in cadeia]
-    return "\n".join(f"  {'└─ ' if i == len(linhas)-1 else '├─ '}{l}"
-                     for i, l in enumerate(linhas))
+    chain = causal_subtree(world, event_id)
+    lines = [render_event(world, e) for e in chain]
+    return "\n".join(f"  {'└─ ' if i == len(lines)-1 else '├─ '}{line}"
+                     for i, line in enumerate(lines))
 
 
 # ---- panorama ----------------------------------------------------------
 def summarize(world: World) -> str:
     from collections import Counter
-    c = Counter(e.kind for e in world.log)
-    vivos = len(world.figures())
-    total = len(world.figures(alive_only=False))
-    linhas = [
+    kind_counts = Counter(e.kind for e in world.log)
+    alive_count = len(world.figures())
+    total_count = len(world.figures(alive_only=False))
+    lines = [
         f"Mundo (seed={world.seed}) após {world.year+1} anos:",
         f"  eventos registrados : {len(world.log)}",
-        f"  figuras (vivas/total): {vivos}/{total}",
+        f"  figuras (vivas/total): {alive_count}/{total_count}",
         f"  artefatos forjados  : {len(world.artifacts())}",
-        "  contagem por tipo   : " + ", ".join(f"{k}={v}" for k, v in c.most_common()),
+        "  contagem por tipo   : " + ", ".join(f"{k}={v}" for k, v in kind_counts.most_common()),
     ]
-    return "\n".join(linhas)
+    return "\n".join(lines)
 
 
-def _arquetipo(civ) -> str:
-    if civ.mercantilismo - civ.belicosidade > 2:
+def _archetype(civ) -> str:
+    if civ.mercantilism - civ.belligerence > 2:
         return "mercantil"
-    if civ.belicosidade - civ.mercantilismo > 2:
+    if civ.belligerence - civ.mercantilism > 2:
         return "belicosa"
     return "ambivalente"
 
@@ -152,21 +171,21 @@ def world_state(world: World) -> str:
     Mostra o resultado do cabo de guerra entre o comércio e o conflito.
     Aliados ligados por sangue (parentesco) vêm marcados com ♦."""
     from .scale import descrever_intensidade
-    linhas = ["Estado geopolítico ao fim da crônica:"]
+    lines = ["Estado geopolítico ao fim da crônica:"]
     for civ in sorted(world.civs(), key=lambda c: c.prosperidade, reverse=True):
-        alias = []
-        for a in sorted(civ.aliados):
-            marca = "♦" if civ.parentesco.get(a, 0) >= 3 else ""
-            alias.append(world.name_of(a) + marca)
-        aliados = ", ".join(alias) or "—"
+        allies_display = []
+        for ally_id in sorted(civ.allies):
+            marca = "♦" if civ.parentesco.get(ally_id, 0) >= 3 else ""
+            allies_display.append(world.name_of(ally_id) + marca)
+        allies_joined = ", ".join(allies_display) or "—"
         prosp = descrever_intensidade(civ.prosperidade)
-        linhas.append(
-            f"  {civ.name:<20} [{_arquetipo(civ):^12}] "
-            f"riqueza {prosp:<12} bel={civ.belicosidade:.0f} merc={civ.mercantilismo:.0f} "
-            f"| aliados: {aliados}"
+        lines.append(
+            f"  {civ.name:<20} [{_archetype(civ):^12}] "
+            f"riqueza {prosp:<12} bel={civ.belligerence:.0f} merc={civ.mercantilism:.0f} "
+            f"| aliados: {allies_joined}"
         )
-    linhas.append("  (♦ = aliança selada por casamento dinástico)")
-    return "\n".join(linhas)
+    lines.append("  (♦ = aliança selada por casamento dinástico)")
+    return "\n".join(lines)
 
 
 def biggest_sagas(world: World,
@@ -175,18 +194,18 @@ def biggest_sagas(world: World,
                   top=3):
     """Escolhe as cadeias causais mais profundas — as melhores lendas para
     narrar — evitando sobreposição (não repete três batalhas da mesma guerra)."""
-    candidatos = [e for e in world.log if e.kind in kinds]
-    candidatos.sort(key=lambda e: (len(causal_subtree(world, e.id)), e.id),
+    candidates = [e for e in world.log if e.kind in kinds]
+    candidates.sort(key=lambda e: (len(causal_subtree(world, e.id)), e.id),
                     reverse=True)
     # uma lenda por "guerra-raiz": a declaração de guerra mais antiga da cadeia.
-    melhor_por_raiz: dict[int, Event] = {}
-    for ev in candidatos:
-        sub = causal_subtree(world, ev.id)
-        guerras = [e for e in sub if e.kind == "guerra_declarada"]
-        raiz = guerras[0].id if guerras else ev.id
-        if raiz not in melhor_por_raiz:
-            melhor_por_raiz[raiz] = ev   # candidatos já vêm do mais profundo
-    escolhidas = sorted(melhor_por_raiz.values(),
-                        key=lambda e: len(causal_subtree(world, e.id)),
-                        reverse=True)
-    return escolhidas[:top]
+    best_by_root_war: dict[int, Event] = {}
+    for ev in candidates:
+        subtree = causal_subtree(world, ev.id)
+        wars = [e for e in subtree if e.kind == "guerra_declarada"]
+        root_id = wars[0].id if wars else ev.id
+        if root_id not in best_by_root_war:
+            best_by_root_war[root_id] = ev   # candidates já vêm do mais profundo
+    chosen = sorted(best_by_root_war.values(),
+                    key=lambda e: len(causal_subtree(world, e.id)),
+                    reverse=True)
+    return chosen[:top]

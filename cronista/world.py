@@ -28,9 +28,9 @@ class World:
 
     # ---- identidade -----------------------------------------------------
     def new_id(self) -> int:
-        i = self._next_id
+        next_id = self._next_id
         self._next_id += 1
-        return i
+        return next_id
 
     def add(self, entity: Any) -> Any:
         self.entities[entity.id] = entity
@@ -91,57 +91,56 @@ class World:
             f.died = ev.year
 
     def _on_guerra_declarada(self, ev: Event) -> None:
-        a, b = ev.actors[0], ev.actors[1]
-        ca, cb = self.get(a), self.get(b)
-        if isinstance(ca, Civ) and isinstance(cb, Civ):
-            ca.em_guerra_com.add(b)
-            cb.em_guerra_com.add(a)
-            ca.guerra_evento[b] = ev.id
-            cb.guerra_evento[a] = ev.id
+        actor_a_id, actor_b_id = ev.actors[0], ev.actors[1]
+        civ_a, civ_b = self.get(actor_a_id), self.get(actor_b_id)
+        if isinstance(civ_a, Civ) and isinstance(civ_b, Civ):
+            civ_a.at_war_with.add(actor_b_id)
+            civ_b.at_war_with.add(actor_a_id)
+            civ_a.war_event_by_civ[actor_b_id] = ev.id
+            civ_b.war_event_by_civ[actor_a_id] = ev.id
             # a guerra rompe qualquer aliança e faz o comércio ruir
-            ca.aliados.discard(b)
-            cb.aliados.discard(a)
+            civ_a.allies.discard(actor_b_id)
+            civ_b.allies.discard(actor_a_id)
 
     def _on_alianca_formada(self, ev: Event) -> None:
-        a, b = ev.actors[0], ev.actors[1]
-        ca, cb = self.get(a), self.get(b)
-        if isinstance(ca, Civ) and isinstance(cb, Civ):
-            ca.aliados.add(b)
-            cb.aliados.add(a)
-            ca.alianca_evento[b] = ev.id
-            cb.alianca_evento[a] = ev.id
+        actor_a_id, actor_b_id = ev.actors[0], ev.actors[1]
+        civ_a, civ_b = self.get(actor_a_id), self.get(actor_b_id)
+        if isinstance(civ_a, Civ) and isinstance(civ_b, Civ):
+            civ_a.allies.add(actor_b_id)
+            civ_b.allies.add(actor_a_id)
+            civ_a.alliance_event_by_civ[actor_b_id] = ev.id
+            civ_b.alliance_event_by_civ[actor_a_id] = ev.id
 
     def _on_alianca_rompida(self, ev: Event) -> None:
-        a, b = ev.actors[0], ev.actors[1]
-        ca, cb = self.get(a), self.get(b)
-        if isinstance(ca, Civ) and isinstance(cb, Civ):
-            ca.aliados.discard(b)
-            cb.aliados.discard(a)
+        actor_a_id, actor_b_id = ev.actors[0], ev.actors[1]
+        civ_a, civ_b = self.get(actor_a_id), self.get(actor_b_id)
+        if isinstance(civ_a, Civ) and isinstance(civ_b, Civ):
+            civ_a.allies.discard(actor_b_id)
+            civ_b.allies.discard(actor_a_id)
 
     def _on_casamento_dinastico(self, ev: Event) -> None:
-        fa, fb = self.get(ev.actors[0]), self.get(ev.actors[1])
-        if isinstance(fa, Figure):
-            fa.spouse = ev.actors[1]
-        if isinstance(fb, Figure):
-            fb.spouse = ev.actors[0]
-        ca, cb = self.get(ev.data["civs"][0]), self.get(ev.data["civs"][1])
-        if isinstance(ca, Civ) and isinstance(cb, Civ):
-            from .scale import clamp
+        figure_a, figure_b = self.get(ev.actors[0]), self.get(ev.actors[1])
+        if isinstance(figure_a, Figure):
+            figure_a.spouse = ev.actors[1]
+        if isinstance(figure_b, Figure):
+            figure_b.spouse = ev.actors[0]
+        civ_a, civ_b = self.get(ev.data["civs"][0]), self.get(ev.data["civs"][1])
+        if isinstance(civ_a, Civ) and isinstance(civ_b, Civ):
             boost = 3.0
-            ca.parentesco[cb.id] = clamp(ca.parentesco.get(cb.id, 0) + boost)
-            cb.parentesco[ca.id] = clamp(cb.parentesco.get(ca.id, 0) + boost)
+            civ_a.parentesco[civ_b.id] = clamp(civ_a.parentesco.get(civ_b.id, 0) + boost)
+            civ_b.parentesco[civ_a.id] = clamp(civ_b.parentesco.get(civ_a.id, 0) + boost)
 
     def _on_paz(self, ev: Event) -> None:
-        a, b = ev.actors[0], ev.actors[1]
-        ca, cb = self.get(a), self.get(b)
-        if isinstance(ca, Civ) and isinstance(cb, Civ):
-            ca.em_guerra_com.discard(b)
-            cb.em_guerra_com.discard(a)
+        actor_a_id, actor_b_id = ev.actors[0], ev.actors[1]
+        civ_a, civ_b = self.get(actor_a_id), self.get(actor_b_id)
+        if isinstance(civ_a, Civ) and isinstance(civ_b, Civ):
+            civ_a.at_war_with.discard(actor_b_id)
+            civ_b.at_war_with.discard(actor_a_id)
             # a paz alivia parte da tensão e da exaustão
-            ca.tensao[b] = clamp(ca.tensao.get(b, 0) * 0.4)
-            cb.tensao[a] = clamp(cb.tensao.get(a, 0) * 0.4)
-            ca.exausto = clamp(ca.exausto * 0.3)
-            cb.exausto = clamp(cb.exausto * 0.3)
+            civ_a.tension[actor_b_id] = clamp(civ_a.tension.get(actor_b_id, 0) * 0.4)
+            civ_b.tension[actor_a_id] = clamp(civ_b.tension.get(actor_a_id, 0) * 0.4)
+            civ_a.exhaustion = clamp(civ_a.exhaustion * 0.3)
+            civ_b.exhaustion = clamp(civ_b.exhaustion * 0.3)
 
     def _on_artefato_roubado(self, ev: Event) -> None:
         art = self.get(ev.data["artifact"])

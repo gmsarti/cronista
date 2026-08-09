@@ -33,7 +33,7 @@ def _to_out(ev: Event) -> EventOut:
 
 
 def _narrated(world: World, ev: Event) -> NarratedEventOut:
-    return NarratedEventOut(**ev.to_dict(), prosa=render_event(world, ev))
+    return NarratedEventOut(**ev.to_dict(), narration=render_event(world, ev))
 
 
 def params_out(seed: int, params: SimulationParams) -> SimulationParamsOut:
@@ -43,12 +43,12 @@ def params_out(seed: int, params: SimulationParams) -> SimulationParamsOut:
 def build_summary(world: World, seed: int, params: SimulationParams) -> WorldSummaryOut:
     return WorldSummaryOut(
         params=params_out(seed, params),
-        total_eventos=len(world.log),
-        figuras_vivas=len(world.figures()),
-        figuras_total=len(world.figures(alive_only=False)),
+        total_events=len(world.log),
+        living_figures=len(world.figures()),
+        total_figures=len(world.figures(alive_only=False)),
         artefatos=len(world.artifacts()),
-        resumo=summarize(world),
-        estado_geopolitico=world_state(world),
+        summary=summarize(world),
+        geopolitical_state=world_state(world),
     )
 
 
@@ -59,16 +59,16 @@ def filter_events(
     year_to: int | None = None,
     actor: int | None = None,
 ) -> list[Event]:
-    eventos = world.log
+    events = world.log
     if kind is not None:
-        eventos = [e for e in eventos if e.kind == kind]
+        events = [e for e in events if e.kind == kind]
     if year_from is not None:
-        eventos = [e for e in eventos if e.year >= year_from]
+        events = [e for e in events if e.year >= year_from]
     if year_to is not None:
-        eventos = [e for e in eventos if e.year <= year_to]
+        events = [e for e in events if e.year <= year_to]
     if actor is not None:
-        eventos = [e for e in eventos if actor in e.actors]
-    return list(eventos)
+        events = [e for e in events if actor in e.actors]
+    return list(events)
 
 
 def build_event_page(
@@ -80,13 +80,13 @@ def build_event_page(
     year_to: int | None = None,
     actor: int | None = None,
 ) -> EventPageOut:
-    eventos = filter_events(world, kind, year_from, year_to, actor)
-    janela = eventos[offset : offset + limit]
+    events = filter_events(world, kind, year_from, year_to, actor)
+    window = events[offset : offset + limit]
     return EventPageOut(
-        total=len(eventos),
+        total=len(events),
         limit=limit,
         offset=offset,
-        items=[_to_out(e) for e in janela],
+        items=[_to_out(e) for e in window],
     )
 
 
@@ -99,12 +99,12 @@ def build_narrated_event(world: World, ev: Event) -> NarratedEventOut:
 
 
 def build_saga(world: World, event_id: int) -> SagaOut:
-    cadeia = causal_subtree(world, event_id)
+    chain = causal_subtree(world, event_id)
     return SagaOut(
         event_id=event_id,
-        profundidade=len(cadeia),
-        prosa=render_saga(world, event_id),
-        cadeia=[_narrated(world, e) for e in cadeia],
+        depth=len(chain),
+        narration=render_saga(world, event_id),
+        chain=[_narrated(world, e) for e in chain],
     )
 
 
@@ -114,8 +114,8 @@ def build_biggest_sagas(world: World, top: int) -> list[SagaRefOut]:
             event_id=ev.id,
             year=ev.year,
             kind=ev.kind,
-            profundidade=len(causal_subtree(world, ev.id)),
-            prosa=render_event(world, ev),
+            depth=len(causal_subtree(world, ev.id)),
+            narration=render_event(world, ev),
         )
         for ev in biggest_sagas(world, top=top)
     ]

@@ -4,7 +4,9 @@
       "Bash(rtk read *)",
       "Bash(uv run *)",
       "Bash(pkill -f \"port 8077\")",
-      "Bash(rtk ls *)"
+      "Bash(rtk ls *)",
+      "Bash(pkill -f \"uvicorn api.main\")",
+      "Bash(rtk git *)"
     ]
   }
 }
