@@ -1,0 +1,37 @@
+flowchart TD
+    SCALE["scale.py — núcleo graduado 0 a 10<br/>clamp · blend · decay · bandas descritivas<br/>(nada é binário; tudo é escalar)"]
+
+    subgraph ESTADO["Estado do mundo (entities.py) — mutável, com identidade"]
+      direction LR
+      FIG["Figure<br/>traços (ambição, valor, astúcia)<br/>renome · afinidade · rancor · cônjuge · linhagem"]
+      CIV["Civ<br/>belicosidade · mercantilismo<br/>tensão · comércio · parentesco<br/>prosperidade · aliados"]
+      ART["Artifact"]
+      SITE["Site"]
+    end
+
+    subgraph MOTOR["systems.py — motores (só PROPOEM eventos; nao mutam nada)"]
+      direction LR
+      DEM["Demography<br/>nascer · envelhecer · morrer"]
+      BON["Bonds<br/>afinidade · casamento intra-civ"]
+      REN["Renown<br/>feito → renome → artefato"]
+      TRA["Trade<br/>comércio · prosperidade · aliança"]
+      DYN["Dynasty<br/>casamento dinástico · parentesco"]
+      CON["Conflict<br/>tensão · guerra · batalha · traição · paz"]
+    end
+
+    WORLD["world.py — emit(kind, actors, caused_by, ...)<br/>1) aplica o efeito ao estado&nbsp;&nbsp;2) registra no log"]
+    LOG["log append-only<br/>Event(year, kind, actors, caused_by, data)<br/>a verdade é o log; o estado é um fold sobre ele"]
+
+    subgraph BARDO["chronicle.py — interpretação (NUNCA muta o estado)"]
+      direction LR
+      SUB["causal_subtree()<br/>segue as arestas caused_by"]
+      RENDER["render_saga / world_state<br/>prosa determinística + bandas"]
+      LLM["narrador LLM<br/>(próximo passo: recebe a subárvore causal)"]
+    end
+
+    SCALE --> ESTADO
+    MOTOR -->|"lê o estado"| ESTADO
+    MOTOR -->|"world.emit(...)"| WORLD
+    WORLD -->|"muta"| ESTADO
+    WORLD -->|"append"| LOG
+    LOG --> SUB --> RENDER --> LLM

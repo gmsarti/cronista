@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Testes / cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+ENV/
+
+# Editores / SO
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Saídas do próprio cronista (logs de mundos gerados)
+*.log.json
+worlds/

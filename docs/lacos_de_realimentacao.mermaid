@@ -1,0 +1,35 @@
+flowchart LR
+    TENS(["TENSAO entre civs<br/>escalar 0 a 10"])
+    WAR{{"guerra declarada<br/>ao cruzar o limiar"}}
+    BAT["batalha → mortes"]
+
+    subgraph PUXAM_GUERRA["forças que ELEVAM a tensão"]
+      direction TB
+      A["A. morte → rancor herdado<br/>(laço trágico)"]
+      B["B. renome → artefato → cobiça/roubo<br/>(laço da cobiça)"]
+      INV["prosperidade alheia → inveja<br/>(o rico vira alvo)"]
+      TRAI["herdeiro ambicioso → traição<br/>(rompe o sangue)"]
+    end
+
+    subgraph PUXAM_PAZ["forças que AMORTECEM a tensão"]
+      direction TB
+      D["D. comércio → prosperidade → aliança<br/>(interdependência)"]
+      E["E. comércio → casamento dinástico → parentesco<br/>(sangue, amortece +forte)"]
+    end
+
+    A --> TENS
+    B --> TENS
+    INV --> TENS
+    TRAI --> TENS
+    D -->|"- 0.06"| TENS
+    E -->|"- 0.09"| TENS
+
+    TENS --> WAR --> BAT
+    BAT -->|"realimenta A"| A
+    WAR -.->|"arrasta aliados"| BLOCO["guerra de bloco"]
+    BAT -.->|"cônjuge/filho morto<br/>pela mão dos sogros"| FRAT["fratricídio<br/>rancor redobrado"]
+    FRAT --> A
+
+    D --> INV
+    E --> D
+    E -.->|"quando traída"| TRAI
