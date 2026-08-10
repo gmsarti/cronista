@@ -6,7 +6,12 @@
       "Bash(pkill -f \"port 8077\")",
       "Bash(rtk ls *)",
       "Bash(pkill -f \"uvicorn api.main\")",
-      "Bash(rtk git *)"
+      "Bash(rtk git *)",
+      "Bash(git checkout *)",
+      "Bash(rtk pytest *)",
+      "Bash(rtk make *)",
+      "Bash(rtk find *)",
+      "Bash(PYTHONPATH=. rtk pytest tests -q)"
     ]
   }
 }
